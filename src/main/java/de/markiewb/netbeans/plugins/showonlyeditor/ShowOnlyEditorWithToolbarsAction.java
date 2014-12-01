@@ -1,15 +1,23 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/* 
+ * Copyright 2014 markiewb.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package de.markiewb.netbeans.plugins.showonlyeditor;
 
 import static java.awt.Frame.MAXIMIZED_BOTH;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import static java.util.Arrays.asList;
 import java.util.Collections;
@@ -18,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.prefs.BackingStoreException;
-import javax.swing.Action;
+import java.util.prefs.Preferences;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionReferences;
@@ -29,7 +37,6 @@ import org.openide.util.NbPreferences;
 import org.openide.windows.Mode;
 import org.openide.windows.TopComponent;
 import org.openide.windows.WindowManager;
-import org.openide.windows.WindowSystemListener;
 
 @ActionID(
         category = "Window",
@@ -48,13 +55,14 @@ public final class ShowOnlyEditorWithToolbarsAction implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         java.util.prefs.Preferences globalPreferences = NbPreferences.forModule(ShowOnlyEditorWithToolbarsAction.class);
-        Map<String, String> modeMap = new HashMap<>();
+        Map<String, String> activeTabPerMode = new HashMap<>();
+        Map<String, String> tabPositionPerMode = new HashMap<>();
+        Map<String, Integer> tabsPerMode = new HashMap<>();
 
         WindowManager manager = org.openide.windows.WindowManager.getDefault();
         boolean shouldMinimize = shouldTCsBeMinimized(manager);
-//        TopComponent.getRegistry().addPropertyChangeListener(propertyChangeListenerImpl);
-
-        for (Mode mode : manager.getModes()) {
+        final Set<? extends Mode> modes = manager.getModes();
+        for (Mode mode : modes) {
             final boolean editorMode = manager.isEditorMode(mode);
             if (editorMode) {
                 continue;
@@ -63,64 +71,103 @@ public final class ShowOnlyEditorWithToolbarsAction implements ActionListener {
                 final TopComponent selectedTopComponent = mode.getSelectedTopComponent();
                 if (null != selectedTopComponent) {
                     String selectedTCperMode = manager.findTopComponentID(selectedTopComponent);
-                    modeMap.put(mode.getName(), selectedTCperMode);
-                }
-            }
+                    activeTabPerMode.put(mode.getName(), selectedTCperMode);
 
-            TopComponent[] openedTopComponents = manager.getOpenedTopComponents(mode);
-            if (openedTopComponents.length <= 0) {
-                continue;
-            }
-            //reverse TC to retain original order
-            List<TopComponent> tcS = new ArrayList<>(asList(openedTopComponents));
-            Collections.reverse(tcS);
-            for (TopComponent openedTopComponent : tcS) {
-
-                if (manager.isTopComponentFloating(openedTopComponent)) {
-                    continue;
-                }
-
-                if (shouldMinimize) {
-                    //minimize
-                    WindowManager.getDefault().setTopComponentMinimized(openedTopComponent, true);
-
-                } else {
-                    //dock
-                    WindowManager.getDefault().setTopComponentMinimized(openedTopComponent, false);
-
-                    //FIXME activate previously selected tab in tab groups
-                    String name = mode.getName();
-                    String get = globalPreferences.get(name, null);
-                    if (get != null) {
-                        TopComponent previouslySelectedTC = manager.findTopComponent(get);
-                        //HACK: prevent focusgrabbing of Navigator (hopefully)
-                        //TODO refactor to use openAtTabPosition
-                        if (openedTopComponents.length > 1) {
-                            previouslySelectedTC.requestActive();
+                    TopComponent[] topComponents = mode.getTopComponents();
+                    tabsPerMode.put(mode.getName() + ".count", topComponents.length);
+                    for (TopComponent tc : topComponents) {
+                        String id = manager.findTopComponentID(tc);
+                        final int tabPosition = tc.getTabPosition();
+                        if (-1 != tabPosition) {
+                            tabPositionPerMode.put(mode.getName() + "." + tabPosition, id);
                         }
                     }
-                };
+                }
+                TopComponent[] openedTopComponents = manager.getOpenedTopComponents(mode);
+                //reverse TC to retain original order
+                List<TopComponent> tcS = new ArrayList<>(asList(openedTopComponents));
+                Collections.reverse(tcS);
+                for (TopComponent openedTopComponent : tcS) {
+
+                    if (manager.isTopComponentFloating(openedTopComponent)) {
+                        continue;
+                    }
+
+                    //minimize
+                    WindowManager.getDefault().setTopComponentMinimized(openedTopComponent, true);
+                }
+                //Persist selected TC in modes
+                maximizeMainWindow(manager);
+
+                try {
+                    globalPreferences.clear();
+                } catch (BackingStoreException ex) {
+                    Exceptions.printStackTrace(ex);
+                }
+                persistStringMap(activeTabPerMode, globalPreferences);
+                persistStringMap(tabPositionPerMode, globalPreferences);
+                persistIntMap(tabsPerMode, globalPreferences);
+            } else {
+                int count = globalPreferences.getInt(mode.getName() + ".count", 0);
+                for (int i = 0; i < count; i++) {
+                    String get = globalPreferences.get(mode.getName() + "." + i, null);
+                    TopComponent tc = manager.findTopComponent(get);
+                    if (null != tc) {
+                        WindowManager.getDefault().setTopComponentMinimized(tc, false);
+                    }
+                }
+
+                //FIXME activate previously selected tab in tab groups
+                String name = mode.getName();
+                String get = globalPreferences.get(name, null);
+                if (get != null) {
+                    TopComponent previouslySelectedTC = manager.findTopComponent(get);
+                    //HACK: prevent focusgrabbing of Navigator (hopefully)
+                    if (null != previouslySelectedTC) {
+                        previouslySelectedTC.requestVisible();
+                    }
+                }
             }
         }
-        maximizeMainWindow(manager);
         focusMainWindow();
         focusEditor();
+    }
 
-        //Persist selected TC in modes
-        if (shouldMinimize) {
-            try {
-                globalPreferences.clear();
-            } catch (BackingStoreException ex) {
-                Exceptions.printStackTrace(ex);
-            }
-            for (Map.Entry<String, String> entrySet : modeMap.entrySet()) {
-                String key = entrySet.getKey();
-                String value = entrySet.getValue();
-                globalPreferences.put(key, value);
-            }
-
+    private void focusEditor() {
+        Mode findMode = WindowManager.getDefault().findMode("editor");
+        TopComponent selectedTopComponent = findMode.getSelectedTopComponent();
+        if (null != selectedTopComponent) {
+            selectedTopComponent.open();
+            selectedTopComponent.requestActive();
+            WindowManager.getDefault().getMainWindow().toFront();
+            selectedTopComponent.requestFocus();
+            selectedTopComponent.requestFocusInWindow();
         }
 
+    }
+
+    private void focusMainWindow() {
+        WindowManager.getDefault().getMainWindow().requestFocusInWindow();
+    }
+
+    private void maximizeMainWindow(WindowManager manager) {
+        manager.getMainWindow().setExtendedState(MAXIMIZED_BOTH);
+    }
+
+    private void persistIntMap(Map<String, Integer> map, Preferences globalPreferences) {
+        for (Map.Entry<String, Integer> entrySet : map.entrySet()) {
+            String key = entrySet.getKey();
+            Integer value = entrySet.getValue();
+            globalPreferences.putInt(key, value);
+        }
+    }
+
+    private void persistStringMap(Map<String, String> map, Preferences globalPreferences) {
+        for (Map.Entry<String, String> entrySet : map.entrySet()) {
+            String key = entrySet.getKey();
+            String value = entrySet.getValue();
+            globalPreferences.put(key, value);
+        }
     }
 
     private boolean shouldTCsBeMinimized(WindowManager manager) {
@@ -148,27 +195,6 @@ public final class ShowOnlyEditorWithToolbarsAction implements ActionListener {
         }
         final boolean shouldMinimize = (countMinimized) != (countTC - countFloating);
         return shouldMinimize;
-    }
-
-    private void maximizeMainWindow(WindowManager manager) {
-        manager.getMainWindow().setExtendedState(MAXIMIZED_BOTH);
-    }
-
-    private void focusMainWindow() {
-        WindowManager.getDefault().getMainWindow().requestFocusInWindow();
-    }
-
-    private static void focusEditor() {
-        Mode findMode = WindowManager.getDefault().findMode("editor");
-        TopComponent selectedTopComponent = findMode.getSelectedTopComponent();
-        if (null != selectedTopComponent) {
-            selectedTopComponent.open();
-            selectedTopComponent.requestActive();
-            WindowManager.getDefault().getMainWindow().toFront();
-            selectedTopComponent.requestFocus();
-            selectedTopComponent.requestFocusInWindow();
-        }
-
     }
 
 }
