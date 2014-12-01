@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.markiewb.netbeans.plugin</groupId>
     <artifactId>show.only.editor.with.toolbars</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>nbm</packaging>
     <build>
         <plugins>
@@ -12,6 +12,16 @@
                 <artifactId>nbm-maven-plugin</artifactId>
                 <version>3.13</version>
                 <extensions>true</extensions>
+                <configuration>
+                    <!-- keep it for backwards compatibility to previous versions-->
+                    <codeNameBase>de.markiewb.netbeans.plugins.showonlyeditorwithtoolbars</codeNameBase>
+                    <licenseFile>LICENSE</licenseFile>
+                    <author>Benno Markiewicz (benno.markiewicz@googlemail.com)</author>
+                    <homePageUrl>https://github.com/markiewb/nb-show-only-editor/</homePageUrl>
+                    <keystore>nbproject/private/keystore</keystore>
+                    <keystorealias>myself</keystorealias>
+                    <licenseName>Apache 2.0</licenseName>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -87,12 +97,18 @@
         <netbeans.hint.jdkPlatform>JDK_1.7</netbeans.hint.jdkPlatform>
         <netbeans.hint.license>apache20</netbeans.hint.license>
     </properties>
-    <description>&lt;p&gt;
+    <description>Adds the action "View/Show Only Editor (With Toolbar)" to the main menu, which minimizes all the open tabs except the editor. 
+
+&lt;ul&gt;
+&lt;li&gt;Works as the original "Show only editor"-action, but this one keeps the toolbars&lt;/li&gt;
+&lt;li&gt;If you invoke the action again, the previously minimized tabs will be docked again&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;
 Changes:
 
 &lt;ul&gt;
-&lt;li&gt;1.0
-&lt;ul&gt;&lt;li&gt;Initial&lt;/li&gt;&lt;/ul&gt;
+&lt;li&gt;1.0.0
+&lt;ul&gt;&lt;li&gt;Initial version&lt;/li&gt;&lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 
