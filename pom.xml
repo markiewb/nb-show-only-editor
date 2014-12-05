@@ -111,6 +111,7 @@ Changes:
 &lt;li&gt;1.0.1
 &lt;ul&gt;
 &lt;li&gt;&lt;a href="https://github.com/markiewb/nb-show-only-editor/issues/2"&gt;Issue 2&lt;/a&gt;: Fixed "Wrong editor tc is focused, when there are multiple editor tcs"&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://github.com/markiewb/nb-show-only-editor/issues/4"&gt;Issue 4&lt;/a&gt;: Fixed "Wrong category shown in plugin manager"&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;1.0.0
