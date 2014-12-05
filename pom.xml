@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.markiewb.netbeans.plugin</groupId>
     <artifactId>show.only.editor.with.toolbars</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>nbm</packaging>
     <build>
         <plugins>
@@ -106,7 +106,13 @@
 &lt;p&gt;
 Changes:
 
+
 &lt;ul&gt;
+&lt;li&gt;1.0.1
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://github.com/markiewb/nb-show-only-editor/issues/2"&gt;Issue 2&lt;/a&gt;: Fixed "Wrong editor tc is focused, when there are multiple editor tcs"&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
 &lt;li&gt;1.0.0
 &lt;ul&gt;&lt;li&gt;Initial version&lt;/li&gt;&lt;/ul&gt;
 &lt;/li&gt;

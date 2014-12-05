@@ -59,6 +59,7 @@ public final class ShowOnlyEditorWithToolbarsAction implements ActionListener {
         Map<String, String> tabPositionPerMode = new HashMap<>();
         Map<String, Integer> tabsPerMode = new HashMap<>();
 
+        TopComponent currentEditor = getCurrentEditor();
         WindowManager manager = org.openide.windows.WindowManager.getDefault();
         boolean shouldMinimize = shouldTCsBeMinimized(manager);
         final Set<? extends Mode> modes = manager.getModes();
@@ -130,24 +131,22 @@ public final class ShowOnlyEditorWithToolbarsAction implements ActionListener {
             }
         }
         focusMainWindow();
-        focusEditor();
-    }
-
-    private void focusEditor() {
-        Mode findMode = WindowManager.getDefault().findMode("editor");
-        TopComponent selectedTopComponent = findMode.getSelectedTopComponent();
-        if (null != selectedTopComponent) {
-            selectedTopComponent.open();
-            selectedTopComponent.requestActive();
-            WindowManager.getDefault().getMainWindow().toFront();
-            selectedTopComponent.requestFocus();
-            selectedTopComponent.requestFocusInWindow();
-        }
-
+        setInputFocusTo(currentEditor);
     }
 
     private void focusMainWindow() {
         WindowManager.getDefault().getMainWindow().requestFocusInWindow();
+    }
+
+    private TopComponent getCurrentEditor() {
+        Set<TopComponent> opened = TopComponent.getRegistry().getOpened();
+        for (TopComponent tc : opened) {
+            boolean isEditor = WindowManager.getDefault().isOpenedEditorTopComponent(tc);
+            if (isEditor){
+                return tc;
+            }
+        }
+        return null;
     }
 
     private void maximizeMainWindow(WindowManager manager) {
@@ -167,6 +166,16 @@ public final class ShowOnlyEditorWithToolbarsAction implements ActionListener {
             String key = entrySet.getKey();
             String value = entrySet.getValue();
             globalPreferences.put(key, value);
+        }
+    }
+
+    private void setInputFocusTo(TopComponent toFocus) {
+        if (null != toFocus) {
+            toFocus.open();
+            toFocus.requestActive();
+            WindowManager.getDefault().getMainWindow().toFront();
+            toFocus.requestFocus();
+            toFocus.requestFocusInWindow();
         }
     }
 
