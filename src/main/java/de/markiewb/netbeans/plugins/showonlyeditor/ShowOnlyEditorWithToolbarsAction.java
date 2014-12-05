@@ -98,8 +98,6 @@ public final class ShowOnlyEditorWithToolbarsAction implements ActionListener {
                     WindowManager.getDefault().setTopComponentMinimized(openedTopComponent, true);
                 }
                 //Persist selected TC in modes
-                maximizeMainWindow(manager);
-
                 try {
                     globalPreferences.clear();
                 } catch (BackingStoreException ex) {
@@ -147,10 +145,6 @@ public final class ShowOnlyEditorWithToolbarsAction implements ActionListener {
             }
         }
         return null;
-    }
-
-    private void maximizeMainWindow(WindowManager manager) {
-        manager.getMainWindow().setExtendedState(MAXIMIZED_BOTH);
     }
 
     private void persistIntMap(Map<String, Integer> map, Preferences globalPreferences) {
